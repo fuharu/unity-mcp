@@ -1,9 +1,9 @@
-﻿import { ICommandHandler } from "./interfaces/ICommandHandler.js";
+import { ICommandHandler } from "./interfaces/ICommandHandler.js";
 import { IResourceHandler } from "./interfaces/IResourceHandler.js";
 import { IPromptHandler } from "./interfaces/IPromptHandler.js";
 import { McpErrorCode } from "../types/ErrorCodes.js"
-import {McpServer, ResourceTemplate} from "@modelcontextprotocol/sdk/server/mcp.js";
-import {undefined} from "zod";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { undefined } from "zod";
 
 /**
  * Adapts various handler types to MCP SDK tools and resources.
@@ -40,7 +40,7 @@ export class HandlerAdapter {
 
             // Create resource template
             // @ts-ignore
-            const template = new ResourceTemplate(handler.resourceUriTemplate, {list:undefined});
+            const template = new ResourceTemplate(handler.resourceUriTemplate, { list: undefined });
 
             this.server.resource(
                 handler.resourceName,
@@ -90,6 +90,7 @@ export class HandlerAdapter {
             const hasParams = definition.additionalProperties && Object.keys(definition.additionalProperties).length > 0;
 
             if (hasParams) {
+                // @ts-expect-error TS2589 - MCP SDK prompt() has excessively deep generics after SDK update
                 this.server.prompt(
                     promptName,
                     definition.description,

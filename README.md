@@ -416,6 +416,8 @@ TypeScript サーバーの環境変数:
 - **ConsoleCommandHandler**: Unity コンソールログ操作
 - **AssembliesResourceHandler**: アセンブリ情報の取得
 - **PackagesResourceHandler**: パッケージ情報の取得
+- **SceneCommandHandler**: シーン操作（GameObject 作成・プレハブ配置・シーン保存など）※このフォークで追加
+- **AssetCommandHandler**: アセット検索（名前・タイプで検索）※このフォークで追加
 
 ### TypeScript
 
@@ -423,6 +425,86 @@ TypeScript サーバーの環境変数:
 - **ConsoleCommandHandler**: コンソールログ操作
 - **AssemblyResourceHandler**: アセンブリ情報の取得
 - **PackageResourceHandler**: パッケージ情報の取得
+- **SceneCommandHandler**: シーン操作（scene_* ツール）※このフォークで追加
+- **AssetCommandHandler**: アセット検索（asset_Search）※このフォークで追加
+
+## 📝 このフォークでの追加・変更点
+
+[isuzu-shiranui/UnityMCP](https://github.com/isuzu-shiranui/UnityMCP) をフォークし、以下の機能追加・修正を行っています。
+
+### 新規追加ハンドラ
+
+#### 1. SceneCommandHandler（シーン操作）
+
+**Unity (C#)**: `jp.shiranui-isuzu.unity-mcp/Editor/Handlers/SceneCommandHandler.cs`  
+**TypeScript**: `unity-mcp-ts/src/handlers/SceneCommandHandler.ts`
+
+| ツール名 | 説明 | 主なパラメータ |
+|----------|------|----------------|
+| scene_CreateGameObject | 空の GameObject を生成 | name, parentPath（任意） |
+| scene_AddComponent | 指定オブジェクトにコンポーネント追加 | path, componentType |
+| scene_SetPosition | 位置を設定 | path, x, y, z（任意） |
+| scene_SetParent | 親を変更 | path, parentPath（任意） |
+| scene_Find | パスでオブジェクト検索 | path |
+| scene_SaveScene | 編集中シーンを保存 | なし |
+| scene_OpenScene | 指定シーンを開く | path |
+| scene_GetActiveSceneName | アクティブシーン名・パスを取得 | なし |
+| scene_InstantiatePrefab | プレハブをシーンに配置 | prefabPath, parentPath（任意） |
+| scene_ListRootObjects | ルートオブジェクト名一覧を取得 | なし |
+
+#### 2. AssetCommandHandler（アセット検索）
+
+**Unity (C#)**: `jp.shiranui-isuzu.unity-mcp/Editor/Handlers/AssetCommandHandler.cs`  
+**TypeScript**: `unity-mcp-ts/src/handlers/AssetCommandHandler.ts`
+
+| ツール名 | 説明 | 主なパラメータ |
+|----------|------|----------------|
+| asset_Search | プロジェクト内アセットを検索 | query（必須）, type（任意: Prefab, Scene, Script 等）, limit（任意: 1–200） |
+
+### タイムアウト設定の延長
+
+Unity が「busy」状態のときにタイムアウトしにくくするため、以下のタイムアウトを **5分** に統一しています。
+
+| ファイル | 変更内容 |
+|----------|----------|
+| `unity-mcp-ts/src/core/UnityConnection.ts` | Unity へのリクエスト応答待ち: 30秒 → **300秒（5分）** |
+| `jp.shiranui-isuzu.unity-mcp/Editor/Core/McpServer.cs` | TCP 接続・コマンド実行・リソース取得の待ち: 5秒 → **300秒（5分）** |
+
+### その他の修正
+
+| ファイル | 変更内容 |
+|----------|----------|
+| `unity-mcp-ts/src/core/HandlerAdapter.ts` | MCP SDK の `prompt()` で発生する TypeScript 型エラー（TS2589）を `@ts-expect-error` で回避 |
+
+### 変更・追加ファイル一覧
+
+```
+jp.shiranui-isuzu.unity-mcp/Editor/
+├── Handlers/
+│   ├── SceneCommandHandler.cs       # 新規
+│   ├── SceneCommandHandler.cs.meta  # 新規
+│   ├── AssetCommandHandler.cs       # 新規
+│   └── AssetCommandHandler.cs.meta  # 新規
+└── Core/
+    └── McpServer.cs                 # タイムアウト延長
+
+unity-mcp-ts/src/
+├── handlers/
+│   ├── SceneCommandHandler.ts       # 新規
+│   ├── AssetCommandHandler.ts       # 新規
+│   ├── README_SCENE.md              # 新規
+│   └── README_ASSET.md              # 新規
+└── core/
+    ├── UnityConnection.ts           # タイムアウト延長
+    └── HandlerAdapter.ts            # 型エラー回避
+```
+
+### このフォークの使い方
+
+- **Unity パッケージ**: `jp.shiranui-isuzu.unity-mcp` を Package Manager の「Add package from disk...」で追加（このリポジトリのパスを指定）
+- **TypeScript**: `unity-mcp-ts` で `npm install` → `npm run build` を実行後、`build/index.js` を Cursor / Claude Desktop の MCP 設定で指定
+
+---
 
 ## 📖 外部リソース
 

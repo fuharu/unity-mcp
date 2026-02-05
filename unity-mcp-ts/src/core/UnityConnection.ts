@@ -1,4 +1,4 @@
-﻿import * as net from 'net';
+import * as net from 'net';
 import * as dgram from 'dgram';
 import { EventEmitter } from 'events';
 import { JObject } from '../types/index.js';
@@ -449,7 +449,7 @@ export class UnityConnection extends EventEmitter {
                         this.pendingRequests.delete(id);
                         reject(new Error('Request timed out'));
                     }
-                }, 30000); // 30 seconds timeout
+                }, 300000); // 300 seconds (5 min) timeout
             } catch (err) {
                 console.error(`[ERROR] Error sending request: ${err instanceof Error ? err.message : String(err)}`);
                 reject(err);

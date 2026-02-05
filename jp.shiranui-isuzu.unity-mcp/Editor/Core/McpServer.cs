@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -336,40 +336,40 @@ namespace UnityMCP.Editor.Core
                 switch (messageType)
                 {
                     case "listClients":
-                    {
-                        var host = serverInfo["host"]?.ToString();
-                        var port = serverInfo["port"]?.Value<int>() ?? 0;
-                        this.ExecuteOnMainThread(() =>
                         {
-                            this.host = host;
-                            this.port = port;
-                            this.TryConnect();
-                        });
-                        return;
-                    }
-                    // Verify this is an MCP server announcement
-                    case "mcp_server_announce":
-                    {
-                        var host = serverInfo["host"]?.ToString();
-                        var port = serverInfo["port"]?.Value<int>() ?? 0;
-                        var version = serverInfo["version"]?.ToString();
-
-                        if (!string.IsNullOrEmpty(host) && port > 0)
-                        {
-                            // Execute on main thread
+                            var host = serverInfo["host"]?.ToString();
+                            var port = serverInfo["port"]?.Value<int>() ?? 0;
                             this.ExecuteOnMainThread(() =>
                             {
-                                Debug.Log($"[McpServer] Detected MCP TypeScript server at {host}:{port} (v{version}), connecting...");
-
-                                // Update host and port from broadcast
                                 this.host = host;
                                 this.port = port;
                                 this.TryConnect();
                             });
+                            return;
                         }
+                    // Verify this is an MCP server announcement
+                    case "mcp_server_announce":
+                        {
+                            var host = serverInfo["host"]?.ToString();
+                            var port = serverInfo["port"]?.Value<int>() ?? 0;
+                            var version = serverInfo["version"]?.ToString();
 
-                        break;
-                    }
+                            if (!string.IsNullOrEmpty(host) && port > 0)
+                            {
+                                // Execute on main thread
+                                this.ExecuteOnMainThread(() =>
+                                {
+                                    Debug.Log($"[McpServer] Detected MCP TypeScript server at {host}:{port} (v{version}), connecting...");
+
+                                    // Update host and port from broadcast
+                                    this.host = host;
+                                    this.port = port;
+                                    this.TryConnect();
+                                });
+                            }
+
+                            break;
+                        }
                 }
             }
             catch (Exception ex)
@@ -417,6 +417,10 @@ namespace UnityMCP.Editor.Core
             {
                 // Expected cancellation, just exit
             }
+            catch (System.Threading.ThreadAbortException)
+            {
+                // スレッド終了時の正常な中断（ドメインリロード・エディタ終了時など）。ログに出さない。
+            }
             catch (Exception e)
             {
                 Debug.LogException(e);
@@ -460,7 +464,7 @@ namespace UnityMCP.Editor.Core
 
                 // Try to connect with timeout
                 var result = this.client.BeginConnect(this.host, this.port, null, null);
-                var success = result.AsyncWaitHandle.WaitOne(5000); // 5 second timeout
+                var success = result.AsyncWaitHandle.WaitOne(300000); // 5 minute timeout
 
                 if (success && this.client.Connected)
                 {
@@ -734,8 +738,8 @@ namespace UnityMCP.Editor.Core
             });
 
             // Wait for the command to be executed on the main thread
-            // Timeout after 5 seconds to prevent hanging
-            if (!waitHandle.WaitOne(5000))
+            // Timeout after 5 minutes to prevent hanging (Unity may be busy)
+            if (!waitHandle.WaitOne(300000))
             {
                 return new JObject
                 {
@@ -884,8 +888,8 @@ namespace UnityMCP.Editor.Core
             });
 
             // Wait for the command to be executed on the main thread
-            // Timeout after 5 seconds to prevent hanging
-            if (!waitHandle.WaitOne(5000))
+            // Timeout after 5 minutes to prevent hanging (Unity may be busy)
+            if (!waitHandle.WaitOne(300000))
             {
                 return new JObject
                 {
@@ -1000,7 +1004,7 @@ namespace UnityMCP.Editor.Core
             // Check if a handler for this command already exists
             if (this.commandHandlers.ContainsKey(commandPrefix))
             {
-                Debug.LogWarning($"Replacing existing handler for command '{commandPrefix}'");
+                if (DetailedLogs) Debug.Log($"Replacing existing handler for command '{commandPrefix}'");
             }
 
             // Check settings for enabled state
